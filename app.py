@@ -120,7 +120,7 @@ def generate_helicorder():
             color=['blue', 'red', 'green','black'],  # Colores personalizados
             show_y_UTC_label=True,
             one_tick_per_line=True,
-            fig_size=(14, 5)
+            fig_size=(12, 5)
         )
 
         # Guardar el gráfico en memoria como imagen PNG

@@ -7,17 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1gBqEZln7C8krda4pQJoyDeTyj9jaHC5l
 """
 
-from flask import Flask, request, send_file, jsonify
-from obspy import read
-import requests
-import io
-import datetime
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('Agg')  # Para evitar problemas de GUI en entornos sin pantalla
-
-app = Flask(__name__)
-
 @app.route('/generate_helicorder', methods=['GET'])
 def generate_helicorder():
     try:
@@ -63,18 +52,18 @@ def generate_helicorder():
         # Crear el helicorder usando la función `plot` de ObsPy con ajustes para mejorar la precisión
         fig = st.plot(
             type="dayplot",
-            interval=60,  # Ajuste de intervalo para mayor precisión
+            interval=60,  # Ajuste de intervalo a 60 minutos para reducir carga
             right_vertical_labels=True,
-            vertical_scaling_range=5000,  # Ajuste del rango vertical para eventos pequeños
+            vertical_scaling_range=3000,  # Rango vertical ajustado para reducir uso de memoria
             color=['k', 'r', 'b'],  # Colores alternados
             show_y_UTC_label=True,
             one_tick_per_line=True,
-            fig_size=(12, 8)  # Tamaño del gráfico ajustado para evitar sobrecarga de memoria
+            fig_size=(10, 5)  # Tamaño del gráfico reducido
         )
 
-        # Guardar el gráfico en memoria como imagen PNG con mayor resolución
+        # Guardar el gráfico en memoria como imagen PNG con resolución más baja
         output_image = io.BytesIO()
-        fig.savefig(output_image, format='png', dpi=150, bbox_inches="tight")  # DPI aumentado para mayor precisión
+        fig.savefig(output_image, format='png', dpi=80, bbox_inches="tight")  # DPI reducido
         output_image.seek(0)
         plt.close(fig)  # Cerrar el gráfico para liberar memoria
 
@@ -85,8 +74,4 @@ def generate_helicorder():
     except Exception as e:
         app.logger.error(f"Ocurrió un error en /generate_helicorder: {str(e)}")
         return jsonify({"error": f"Ocurrió un error: {str(e)}"}), 500
-
-# Ejecutar el servidor Flask
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
 

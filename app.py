@@ -160,12 +160,13 @@ def generate_helicorder():
         # Crear el helicorder usando la función `plot` de ObsPy con ajustes para mejorar la precisión
         fig = st.plot(
             type="dayplot",
-            interval=30,  # Ajuste de intervalo para mayor precisión
+            interval=60,  # Ajuste de intervalo para mayor precisión
             right_vertical_labels=True,
-            vertical_scaling_range=2000,  # Ajuste del rango vertical para eventos pequeños
+            vertical_scaling_range=5000,  # Ajuste del rango vertical para eventos pequeños
             color=['k', 'r', 'b'],  # Colores alternados
             show_y_UTC_label=True,
             one_tick_per_line=True
+            fig_size=(12, 8)  # Tamaño del gráfico ajustado para evitar sobrecarga de memoria
         )
 
         # Guardar el gráfico en memoria como imagen PNG con mayor resolución

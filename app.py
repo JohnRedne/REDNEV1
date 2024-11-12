@@ -58,7 +58,7 @@ def generate_sismograma():
         data = tr.data
 
         # Crear el gráfico de sismograma
-        fig, ax = plt.subplots(figsize=(12, 4))
+        fig, ax = plt.subplots(figsize=(14, 4))
         ax.plot(times, data, color='black', linewidth=0.8)
         ax.set_title(f"{start} - {end}", fontsize=10, y=1.05)
         ax.set_xlabel("Tiempo")
@@ -69,7 +69,7 @@ def generate_sismograma():
 
         # Guardar el gráfico en memoria como imagen PNG
         output_image = io.BytesIO()
-        plt.savefig(output_image, format='png', dpi=180, bbox_inches="tight")
+        plt.savefig(output_image, format='png', dpi=200, bbox_inches="tight")
         output_image.seek(0)
         plt.close(fig)
 
@@ -117,15 +117,15 @@ def generate_helicorder():
             interval=60,
             right_vertical_labels=True,
             vertical_scaling_range=3000,
-            color=['blue', 'red', 'green'],  # Colores personalizados
+            color=['black','blue', 'red', 'green'],  # Colores personalizados
             show_y_UTC_label=True,
             one_tick_per_line=True,
-            fig_size=(12, 5)
+            fig_size=(14, 5)
         )
 
         # Guardar el gráfico en memoria como imagen PNG
         output_image = io.BytesIO()
-        fig.savefig(output_image, format='png', dpi=150, bbox_inches="tight")
+        fig.savefig(output_image, format='png', dpi=180, bbox_inches="tight")
         output_image.seek(0)
         plt.close(fig)
 

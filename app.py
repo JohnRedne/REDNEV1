@@ -30,6 +30,26 @@ def calculate_time_difference(start, end):
 def generate_graph():
     try:
         # Obtener los parámetros de la URL
+        start = request.args.get('start')
+        end = request.args.get('end')
+
+        # Verificar el intervalo de tiempo
+        interval_minutes = calculate_time_difference(start, end)
+
+        # Seleccionar el tipo de gráfico según el intervalo
+        if interval_minutes <= 30:
+            return generate_sismograma()  # Menos de 30 minutos, generar sismograma
+        else:
+            return generate_helicorder()  # 30 minutos o más, generar helicorder
+
+    except Exception as e:
+        return jsonify({"error": f"Ocurrió un error: {str(e)}"}), 500
+
+# Función para generar sismograma
+@app.route('/generate_sismograma', methods=['GET'])
+def generate_sismograma():
+    try:
+        # Obtener los parámetros de la URL
         net = request.args.get('net')
         sta = request.args.get('sta')
         loc = request.args.get('loc')
@@ -41,26 +61,13 @@ def generate_graph():
         if not all([net, sta, loc, cha, start, end]):
             return jsonify({"error": "Faltan parámetros requeridos"}), 400
 
-        # Verificar el intervalo de tiempo
-        interval_minutes = calculate_time_difference(start, end)
-
-        # Seleccionar el tipo de gráfico según el intervalo
-        if interval_minutes <= 30:
-            return generate_sismograma(net, sta, loc, cha, start, end)
-        else:
-            return generate_helicorder(net, sta, loc, cha, start, end)
-
-    except Exception as e:
-        return jsonify({"error": f"Ocurrió un error: {str(e)}"}), 500
-
-# Función para generar sismograma
-def generate_sismograma(net, sta, loc, cha, start, end):
-    try:
         # Construir la URL para descargar el archivo MiniSEED desde Raspberry Shake
         url = f"https://data.raspberryshake.org/fdsnws/dataselect/1/query?starttime={start}&endtime={end}&network={net}&station={sta}&location={loc}&channel={cha}&nodata=404"
 
         # Realizar la solicitud al servidor para obtener los datos
         response = requests.get(url)
+        if response.status_code == 503:
+            return jsonify({"error": "El servidor no está disponible en este momento."}), 503
         if response.status_code != 200:
             return jsonify({"error": f"Error al descargar datos: {response.status_code}"}), 500
 
@@ -75,18 +82,24 @@ def generate_sismograma(net, sta, loc, cha, start, end):
 
         # Extraer los datos para graficar con Matplotlib
         tr = st[0]
-        start_time = tr.stats.starttime.datetime
-        times = [start_time + datetime.timedelta(seconds=sec) for sec in tr.times()]
-        data = tr.data
+        start_time = tr.stats.starttime.datetime  # Obtener el tiempo de inicio del sismograma
+        times = [start_time + datetime.timedelta(seconds=sec) for sec in tr.times()]  # Crear una lista de tiempos absolutos
+        data = tr.data  # Amplitud de las lecturas sísmicas
 
-        # Crear el gráfico de sismograma
-        fig, ax = plt.subplots(figsize=(10, 4))
+        # Crear el gráfico con Matplotlib
+        fig, ax = plt.subplots(figsize=(10, 4))  # Tamaño ajustado para aplicaciones móviles
         ax.plot(times, data, color='black', linewidth=0.8)
-        ax.set_title(f"{start} - {end}", fontsize=10, y=1.05)
+
+        # Configuración de los ejes
+        ax.set_title(f"{start} - {end}", fontsize=10, y=1.05)  # Título con rango de tiempo
         ax.set_xlabel("Tiempo")
         ax.set_ylabel("Amplitud")
+
+        # Etiqueta de la estación en la esquina superior izquierda
         ax.text(0.02, 0.98, f"{net}.{sta}.{loc}.{cha}", transform=ax.transAxes,
                 fontsize=9, verticalalignment='top', bbox=dict(facecolor='white', edgecolor='black'))
+
+        # Rotar etiquetas de tiempo en el eje X para mayor claridad
         fig.autofmt_xdate()
 
         # Guardar el gráfico en memoria como imagen PNG
@@ -95,19 +108,35 @@ def generate_sismograma(net, sta, loc, cha, start, end):
         output_image.seek(0)
         plt.close(fig)
 
+        # Devolver la imagen generada como respuesta
         return send_file(output_image, mimetype='image/png')
 
     except Exception as e:
         return jsonify({"error": f"Ocurrió un error: {str(e)}"}), 500
 
 # Función para generar helicorder
-def generate_helicorder(net, sta, loc, cha, start, end):
+@app.route('/generate_helicorder', methods=['GET'])
+def generate_helicorder():
     try:
+        # Obtener los parámetros de la URL
+        net = request.args.get('net')
+        sta = request.args.get('sta')
+        loc = request.args.get('loc')
+        cha = request.args.get('cha')
+        start = request.args.get('start')
+        end = request.args.get('end')
+
+        # Verificar que todos los parámetros requeridos están presentes
+        if not all([net, sta, loc, cha, start, end]):
+            return jsonify({"error": "Faltan parámetros requeridos"}), 400
+
         # Construir la URL para descargar el archivo MiniSEED desde Raspberry Shake
         url = f"https://data.raspberryshake.org/fdsnws/dataselect/1/query?starttime={start}&endtime={end}&network={net}&station={sta}&location={loc}&channel={cha}&nodata=404"
 
         # Realizar la solicitud al servidor para obtener los datos
         response = requests.get(url)
+        if response.status_code == 503:
+            return jsonify({"error": "El servidor no está disponible en este momento."}), 503
         if response.status_code != 200:
             return jsonify({"error": f"Error al descargar datos: {response.status_code}"}), 500
 
@@ -120,24 +149,24 @@ def generate_helicorder(net, sta, loc, cha, start, end):
         except Exception as e:
             return jsonify({"error": f"Error procesando el archivo MiniSEED: {str(e)}"}), 500
 
-        # Crear el helicorder usando la función `plot` de ObsPy
+        # Crear el helicorder usando la función `plot` de ObsPy con ajustes para mejorar la precisión
         fig = st.plot(
             type="dayplot",
-            interval=60,
+            interval=30,  # Ajuste de intervalo para mayor precisión
             right_vertical_labels=True,
-            vertical_scaling_range=3000,
-            color=['k', 'r', 'b','green'],
+            vertical_scaling_range=2000,  # Ajuste del rango vertical para eventos pequeños
+            color=['k', 'r', 'b','green'],  # Colores alternados
             show_y_UTC_label=True,
-            one_tick_per_line=True,
-            fig_size=(10, 5)
+            one_tick_per_line=True
         )
 
-        # Guardar el gráfico en memoria como imagen PNG
+        # Guardar el gráfico en memoria como imagen PNG con mayor resolución
         output_image = io.BytesIO()
-        fig.savefig(output_image, format='png', dpi=80, bbox_inches="tight")
+        fig.savefig(output_image, format='png', dpi=150, bbox_inches="tight")  # DPI aumentado para mayor precisión
         output_image.seek(0)
-        plt.close(fig)
+        plt.close(fig)  # Cerrar el gráfico para liberar memoria
 
+        # Devolver la imagen generada como respuesta
         return send_file(output_image, mimetype='image/png')
 
     except Exception as e:

@@ -117,7 +117,7 @@ def generate_helicorder():
             interval=60,
             right_vertical_labels=True,
             vertical_scaling_range=3000,
-            color=['black','blue', 'red', 'green'],  # Colores personalizados
+            color=['blue', 'red', 'green','black'],  # Colores personalizados
             show_y_UTC_label=True,
             one_tick_per_line=True,
             fig_size=(14, 5)
